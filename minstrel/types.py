@@ -1,8 +1,8 @@
-from typing import Any, Dict, Callable, List, TypeVar
-from .weighted_set import WeightedSet
+from typing import Any, Dict, Callable, TypeVar, Union
+
+Number = Union[int, float]
 
 
 T = TypeVar('T')
-Permutations = WeightedSet
-TypeHandler = Callable[[List[T]], Permutations]
+TypeHandler = Callable[[T], T]
 HandlerDict = Dict[Any, TypeHandler]
