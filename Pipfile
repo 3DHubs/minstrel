@@ -8,3 +8,5 @@ pytest = "*"
 
 [packages]
 frozendict = "*"
+jsonpatch = "*"
+click = "*"

@@ -16,6 +16,7 @@ def test_simplify_dict():
         'list': (0, 1, -1),
     }
 
+
 def test_simplify_dict_hashable():
     hash(simplify_dict({
         'str': 'bar',
