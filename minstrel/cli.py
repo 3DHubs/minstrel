@@ -33,11 +33,14 @@ def generate(source, target, indent):
         "base": default,
         "derivatives": [list(diff) for diff in patches],
     }
-    click.echo('Saving base object and {} patches to {}'
-               .format(len(output['patches']), target))
+    if target == '-':
+        click.echo(json.dumps(output, indent=indent))
+    else:
+        click.echo('Saving base object and {} patches to {}'
+                   .format(len(output['derivatives']), target))
 
-    with open(target, 'w') as f:
-        json.dump(output, f, indent=indent)
+        with open(target, 'w') as f:
+            json.dump(output, f, indent=indent)
 
 
 @minstrel.command()

@@ -1,33 +1,13 @@
 from typing import Iterable
-from frozendict import frozendict
 import jsonpatch
-from .handling import best_default_dict, simplify_dicts
-
-
-def _unfreeze(dct: frozendict) -> dict:
-    if not isinstance(dct, frozendict):
-        return dct
-
-    dct = dct._dict
-    for key, value in dct.items():
-        if isinstance(value, frozendict):
-            dct[key] = _unfreeze(value)
-        elif isinstance(value, tuple):
-            dct[key] = [_unfreeze(item) for item in value]
-
-    return dct
+from .handling import handle_dicts
 
 
 def differ(dicts: Iterable[dict]) -> Iterable[dict]:
-    simplified = simplify_dicts(dicts)
-    default = _unfreeze(best_default_dict(simplified))
+    default, derivatives = handle_dicts(dicts)
 
     patches = []
-    for dct in simplified:
-        if dct == default:
-            continue
-
-        dct = _unfreeze(dct)
+    for dct in derivatives:
         patches.append(jsonpatch.make_patch(default, dct))
 
     return default, patches

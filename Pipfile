@@ -5,6 +5,7 @@ verify_ssl = true
 [dev-packages]
 mypy = "*"
 pytest = "*"
+mypy_extensions = "*"
 
 [packages]
 frozendict = "*"

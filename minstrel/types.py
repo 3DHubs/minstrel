@@ -1,8 +1,4 @@
-from typing import Any, Dict, Callable, TypeVar, Union
+from typing import Union, Tuple
 
 Number = Union[int, float]
-
-
-T = TypeVar('T')
-TypeHandler = Callable[[T], T]
-HandlerDict = Dict[Any, TypeHandler]
+Path = Tuple[Union[str, int]]
