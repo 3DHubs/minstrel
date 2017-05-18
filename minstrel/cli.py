@@ -70,7 +70,7 @@ def amqp(source, host, user, password):
         data = json.load(f)
 
     try:
-        config = data['transports']['queue']
+        config = data['transports']['amqp']
         exchange = config['exchange']
         routing_key = config['routing_key']
     except KeyError:
