@@ -25,6 +25,9 @@ def generate(source, target, indent):
     """
     Generate Minstrel mock file from a list of JSON objects.
 
+    PLEASE NOTE: this is an alpha implementation and it's mostly broken. No
+    promises.
+
     Reads from JSON file source (should contain a list of objects) and stores
     Minstrel-readable JSON to target. Will parse the objects to find all
     distinct types of objects and create a base object and patches out of them.
