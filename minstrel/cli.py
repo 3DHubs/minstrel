@@ -17,6 +17,42 @@ def minstrel():
 
 
 @minstrel.command()
+@click.argument('config')
+@click.pass_context
+def load(ctx, config):
+    """Run Minstrel imports according to config file."""
+    with open(config, 'r') as f:
+        settings = json.load(f)
+
+    transports = {}
+    for transport, conf in settings['transports'].items():
+        transports[transport] = conf
+
+    for filename in settings['files']:
+        with open(source, 'r') as f:
+            data = json.load(f)
+
+        if 'amqp' in data['transports'] and 'amqp' in transports:
+            ctx.invoke(
+                amqp,
+                source=filename,
+                host=transports['amqp']['host'],
+                user=transports['amqp']['user'],
+                password=transports['amqp']['password'],
+            )
+        elif 'sql' in data['transports'] and 'sql' in transports:
+            ctx.invoke(
+                sql,
+                source=filename,
+                server=transports['amqp']['server'],
+                host=transports['amqp']['host'],
+                user=transports['amqp']['user'],
+                password=transports['amqp']['password'],
+                database=transports['amqp']['database'],
+            )
+
+
+@minstrel.command()
 @click.argument('source')
 @click.argument('target')
 @click.option('--indent', type=int, default=2,
