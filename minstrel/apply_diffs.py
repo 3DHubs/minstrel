@@ -85,3 +85,4 @@ def sql_applier(sql_url: str, table_name: str, dicts: Iterable[dict]):
                     table.update().where(pk_and),
                     dct
                 )
+        conn.execute('commit')
