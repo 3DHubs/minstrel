@@ -20,7 +20,8 @@ class Config:
         for filename in config['files']:
             with open(filename, 'r') as f:
                 data = json.load(f)
-            self.mocks.append(Mock(data))
+            self.mocks.append(Mock(data['transports'], data['base'],
+                                   data['derivatives']))
 
     def setup(self):
         self.transports = {}
