@@ -68,6 +68,8 @@ def sql_applier(sql_url: str, table_name: str, dicts: Iterable[dict]):
             try:
                 conn.execute(table.insert(), dct)
             except sqlalchemy.exc.IntegrityError as e:
+                if 'duplicate key' not in str(e):
+                    raise
                 pks = inspect(table).primary_key
 
                 pk_columns = []
