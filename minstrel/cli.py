@@ -118,7 +118,7 @@ def amqp(source, host, user, password):
     base = data['base']
     derivatives = data['derivatives']
 
-    dicts = []
+    dicts = [base]
     for derivative in derivatives:
         dct = base.copy()
         if 'merge' in derivative:
@@ -157,7 +157,7 @@ def sql(source, server, host, user, password, database):
     base = data['base']
     derivatives = data['derivatives']
 
-    dicts = []
+    dicts = [base]
     for derivative in derivatives:
         dct = base.copy()
         if 'merge' in derivative:
