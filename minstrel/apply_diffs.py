@@ -41,8 +41,11 @@ def sql_applier(sql_url: str, table_name: str, dicts: Iterable[dict]):
     columns = set()
     for dct in dicts:
         for key, value in dct.items():
-            if isinstance(value, dict):
-                logger.warning(f'Nested resources are not supported at {key}')
+            if isinstance(value, dict) or isinstance(value, list):
+                logger.warning(
+                    f'Nested resources are not supported for column "{key}".'
+                    ' Continuing anyway.'
+                )
             columns.add(key)
 
     engine = create_engine(sql_url)
