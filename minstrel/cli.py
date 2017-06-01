@@ -29,7 +29,7 @@ def load(ctx, config):
         transports[transport] = conf
 
     for filename in settings['files']:
-        with open(source, 'r') as f:
+        with open(filename, 'r') as f:
             data = json.load(f)
 
         if 'amqp' in data['transports'] and 'amqp' in transports:
