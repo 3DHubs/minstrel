@@ -32,6 +32,8 @@ def load(ctx, config):
         with open(filename, 'r') as f:
             data = json.load(f)
 
+        click.echo(f'Running import for "{filename}".')
+
         if 'amqp' in data['transports'] and 'amqp' in transports:
             ctx.invoke(
                 amqp,
