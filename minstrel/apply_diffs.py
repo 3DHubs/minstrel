@@ -17,10 +17,8 @@ class NoSuchTableError(Exception):
     pass
 
 
-def patcher(base: dict, derivatives: Iterable[Iterable[dict]]):
-    yield base
-    for derivative in derivatives:
-        yield jsonpatch.JsonPatch(derivative).apply(base)
+def patch(base: dict, patches: Iterable[dict]):
+    return jsonpatch.JsonPatch(patches).apply(base)
 
 
 def amqp_applier(amqp_url: str, exchange_name: str, routing_key: str,

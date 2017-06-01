@@ -5,7 +5,7 @@ from .apply_diffs import (
     amqp_applier,
     NoSuchColumnError,
     NoSuchTableError,
-    patcher,
+    patch,
     sql_applier,
 )
 
@@ -116,7 +116,14 @@ def amqp(source, host, user, password):
     base = data['base']
     derivatives = data['derivatives']
 
-    dicts = patcher(base, (deriv['patches'] for deriv in derivatives))
+    dicts = []
+    for derivative in derivatives:
+        dct = base.copy()
+        if 'merge' in derivative:
+            dct.update(derivative['merge'])
+        if 'patches' in derivative:
+            dct = patch(base, derivative['patches'])
+        dicts.append(dct)
 
     amqp_applier(
         f'amqp://{user}:{password}@{host}',
@@ -148,7 +155,14 @@ def sql(source, server, host, user, password, database):
     base = data['base']
     derivatives = data['derivatives']
 
-    dicts = patcher(base, (deriv['patches'] for deriv in derivatives))
+    dicts = []
+    for derivative in derivatives:
+        dct = base.copy()
+        if 'merge' in derivative:
+            dct.update(derivative['merge'])
+        if 'patches' in derivative:
+            dct = patch(base, derivative['patches'])
+        dicts.append(dct)
 
     try:
         sql_applier(
