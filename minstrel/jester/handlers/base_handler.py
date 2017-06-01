@@ -13,7 +13,7 @@ from typing import (
 )
 from mypy_extensions import Arg
 from collections import defaultdict
-from ..types import Path
+from ...types import Path
 
 ValueType = TypeVar('ValueType')
 Forms = TypeVar('Forms', bound=Hashable)

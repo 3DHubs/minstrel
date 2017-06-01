@@ -3,7 +3,7 @@ from frozendict import frozendict
 from typing import Any, Iterable, Tuple, List
 from collections import defaultdict
 from .handlers import HandlerMap, get_handler_map
-from .types import Path
+from ..types import Path
 
 
 def flattenit(pyobj, keytuple=()):

@@ -1,13 +1,36 @@
 import json
 import click
 from .generate_diffs import differ
-from .apply_diffs import (
-    amqp_applier,
+from .config import Config
+from .mock import Mock
+from .transports.sql_transport import (
     NoSuchColumnError,
     NoSuchTableError,
-    patch,
-    sql_applier,
 )
+from . import transports
+
+
+def _read_config_into_kwargs(config, kwargs):
+    transport_kwargs = kwargs.copy()
+    if config is not None:
+        with open(config, 'r') as f:
+            conf_data = json.load(f)
+
+        if 'sql' in conf_data['transports']:
+            transport_kwargs.update(conf_data['transports']['sql'])
+
+    arg_defaults = {
+        'server': 'postgresql',
+        'host': 'localhost',
+        'user': 'postgres',
+        'password': '',
+        'database': 'postgres',
+    }
+    for name, default in arg_defaults.items():
+        if kwargs[name] is not None:
+            transport_kwargs[name] = kwargs[name]
+
+    return transport_kwargs
 
 
 @click.group()
@@ -16,42 +39,34 @@ def minstrel():
     pass
 
 
-@minstrel.command()
+@minstrel.command(context_settings=dict(
+    ignore_unknown_options=True,
+    allow_extra_args=True,
+))
 @click.argument('config')
 @click.pass_context
 def load(ctx, config):
     """Run Minstrel imports according to config file."""
     with open(config, 'r') as f:
-        settings = json.load(f)
+        data = json.load(f)
+    conf = Config(data)
 
-    transports = {}
-    for transport, conf in settings['transports'].items():
-        transports[transport] = conf
+    while True:
+        try:
+            arg = ctx.args.pop(0)
+        except IndexError:
+            break
 
-    for filename in settings['files']:
-        with open(filename, 'r') as f:
-            data = json.load(f)
+        if not arg.startswith('--'):
+            click.echo(f'Argument {arg} not understood.', err=True)
+            return
 
-        click.echo(f'Running import for "{filename}".')
+        transport, setting = arg[2:].split('-', 1)
+        value = ctx.args.pop(0)
+        conf.transport_settings[transport][setting] = value
 
-        if 'amqp' in data['transports'] and 'amqp' in transports:
-            ctx.invoke(
-                amqp,
-                source=filename,
-                host=transports['amqp']['host'],
-                user=transports['amqp']['user'],
-                password=transports['amqp']['password'],
-            )
-        elif 'sql' in data['transports'] and 'sql' in transports:
-            ctx.invoke(
-                sql,
-                source=filename,
-                server=transports['sql']['server'],
-                host=transports['sql']['host'],
-                user=transports['sql']['user'],
-                password=transports['sql']['password'],
-                database=transports['sql']['database'],
-            )
+    conf.setup()
+    conf.run()
 
 
 @minstrel.command()
@@ -104,76 +119,55 @@ def apply():
 @click.option('--password', '-p', type=str, default='guest')
 def amqp(source, host, user, password):
     """Send all generated objects to an AMQP exchange."""
-    with open(source, 'r') as f:
-        data = json.load(f)
-
-    try:
-        config = data['transports']['amqp']
-        exchange = config['exchange']
-        routing_key = config['routing_key']
-    except KeyError:
-        click.echo('No AMQP configuration found.', err=True)
-        return
-
-    base = data['base']
-    derivatives = data['derivatives']
-
-    dicts = [base]
-    for derivative in derivatives:
-        dct = base.copy()
-        if 'merge' in derivative:
-            dct.update(derivative['merge'])
-        if 'patches' in derivative:
-            dct = patch(base, derivative['patches'])
-        dicts.append(dct)
-
-    amqp_applier(
-        f'amqp://{user}:{password}@{host}',
-        exchange,
-        routing_key,
-        dicts,
-    )
+    click.echo('Broken, currently.', err=True)
 
 
 @apply.command()
 @click.argument('source')
-@click.option('--server', '-s', type=str, default='postgresql')
-@click.option('--host', '-h', type=str, default='localhost')
-@click.option('--user', '-u', type=str, default='root')
-@click.option('--password', '-p', type=str, default='')
-@click.option('--database', '-d', type=str, default='database')
-def sql(source, server, host, user, password, database):
+@click.option('--config', '-c', type=str)
+@click.option('--server', '-s', type=str)
+@click.option('--host', '-h', type=str)
+@click.option('--user', '-u', type=str)
+@click.option('--password', '-p', type=str)
+@click.option('--database', '-d', type=str)
+def sql(source, config, **kwargs):
     """Store all generated objects key-to-column to an SQL table."""
+    transport_kwargs = _read_config_into_kwargs(config, kwargs)
+    transport = transports.SQLTransport(**transport_kwargs)
+
     with open(source, 'r') as f:
         data = json.load(f)
 
-    try:
-        config = data['transports']['sql']
-        table = config['table']
-    except KeyError:
-        click.echo('No SQL configuration found.', err=True)
-        return
-
-    base = data['base']
-    derivatives = data['derivatives']
-
-    dicts = [base]
-    for derivative in derivatives:
-        dct = base.copy()
-        if 'merge' in derivative:
-            dct.update(derivative['merge'])
-        if 'patches' in derivative:
-            dct = patch(base, derivative['patches'])
-        dicts.append(dct)
+    mock = Mock(data['transports'], data['base'], data['derivatives'])
 
     try:
-        sql_applier(
-            f'{server}://{user}:{password}@{host}/{database}',
-            table,
-            dicts,
-        )
+        transport.write(mock)
     except (NoSuchTableError, NoSuchColumnError) as e:
         click.echo(e, err=True)
+
+
+@minstrel.group()
+def read():
+    """Read from a storage into a Minstrel-loadable file."""
+    pass
+
+
+@read.command('sql')
+@click.argument('table_name')
+@click.option('--config', '-c', type=str)
+@click.option('--server', '-s', type=str)
+@click.option('--host', '-h', type=str)
+@click.option('--user', '-u', type=str)
+@click.option('--password', '-p', type=str)
+@click.option('--database', '-d', type=str)
+@click.pass_context
+def read_sql(ctx, table_name, config, **kwargs):
+    """Store all generated objects key-to-column to an SQL table."""
+    transport_kwargs = _read_config_into_kwargs(config, kwargs)
+    transport = transports.SQLTransport(**transport_kwargs)
+
+    mock = transport.read(table_name)
+    click.echo(json.dumps(mock, indent=2))
 
 
 if __name__ == '__main__':

@@ -1,6 +1,6 @@
 from typing import Dict, NamedTuple
 from enum import Enum, auto
-from ..types import Number, Path
+from ...types import Number, Path
 from .base_handler import BaseHandler, Filler
 
 

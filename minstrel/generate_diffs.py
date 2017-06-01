@@ -1,6 +1,6 @@
 from typing import Iterable
 import jsonpatch
-from .handling import handle_dicts
+from .jester.handling import handle_dicts
 
 
 def differ(dicts: Iterable[dict]) -> Iterable[dict]:

@@ -1,6 +1,6 @@
 from typing import NamedTuple, Dict
 from frozendict import frozendict
-from ..types import Path
+from ...types import Path
 from .base_handler import BaseHandler, ComplexFiller
 
 
