@@ -44,11 +44,11 @@ def load(ctx, config):
             ctx.invoke(
                 sql,
                 source=filename,
-                server=transports['amqp']['server'],
-                host=transports['amqp']['host'],
-                user=transports['amqp']['user'],
-                password=transports['amqp']['password'],
-                database=transports['amqp']['database'],
+                server=transports['sql']['server'],
+                host=transports['sql']['host'],
+                user=transports['sql']['user'],
+                password=transports['sql']['password'],
+                database=transports['sql']['database'],
             )
 
 
