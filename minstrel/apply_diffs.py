@@ -1,10 +1,13 @@
+import collections
 from logging import getLogger
-import json
 from typing import Iterable
-import kombu
-from sqlalchemy import create_engine, Table, MetaData
-import sqlalchemy.exc
+import json
+
+from sqlalchemy import create_engine, cast, Table, MetaData, and_, Column
+from sqlalchemy.inspection import inspect
 import jsonpatch
+import kombu
+import sqlalchemy.exc
 
 logger = getLogger(__name__)
 
@@ -61,4 +64,24 @@ def sql_applier(sql_url: str, table_name: str, dicts: Iterable[dict]):
             raise NoSuchColumnError(f'Column "{column}" does not exist.')
 
     with engine.connect() as conn:
-        conn.execute(table.insert(), dicts)
+        for dct in dicts:
+            try:
+                conn.execute(table.insert(), dct)
+            except sqlalchemy.exc.IntegrityError as e:
+                pks = inspect(table).primary_key
+
+                pk_columns = []
+                for pk in pks:
+                    if isinstance(pk, Column):
+                        pk_columns.append(pk)
+                    else:
+                        map(pk_columns.append, pk.columns.values())
+
+                pk_and = and_(*(
+                    column == cast(dct[column.name], column.type)
+                    for column in pk_columns
+                ))
+                conn.execute(
+                    table.update().where(pk_and),
+                    dct
+                )
