@@ -90,6 +90,19 @@ class SQLTransport(Transport):
                         table.update().where(pk_and),
                         obj
                     )
+
+            # PostgreSQL will not update a sequence after an `id` has been inserted, work around that:
+            for col in table.columns:
+                if not col.autoincrement:
+                    continue
+                print(f'Updating autoincrement for {col.name} in {table.name}: {table.name}_{col.name}_seq')
+                value = conn.execute(f"""
+                    SELECT max({col.name}) FROM {table.name}""").fetchone()[0]
+                if value is not None:
+                    value = int(value) + 1
+                    conn.execute(f"""
+                        ALTER SEQUENCE IF EXISTS {table.name}_{col.name}_seq
+                        MINVALUE {value} START {value} RESTART {value}""")
             conn.execute('commit')
 
     def read(self, table_name):
