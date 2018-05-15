@@ -99,7 +99,11 @@ class SQLTransport(Transport):
                 # Fetch the sequence for this autoincremented column
                 seq = list(conn.execute(f"""
                     SELECT column_default FROM information_schema.columns
-                    WHERE column_default LIKE 'nextval%%' and column_name = '{col.name}'"""))
+                    WHERE column_default LIKE 'nextval%%'
+                        AND column_name = '{col.name}'
+                        AND table_name = '{table.name}'
+                        AND table_schema = 'public'
+                """))
                 if not seq:
                     continue
                 seq_name = re.findall(r'^nextval\(\'(.*)\'::regclass\)', seq[0][0])
