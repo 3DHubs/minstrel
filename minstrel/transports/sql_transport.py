@@ -5,6 +5,7 @@ from sqlalchemy.inspection import inspect
 import sqlalchemy.exc
 from .base_transport import Transport
 from ..mock import Mock
+import re
 
 
 class NoSuchColumnError(Exception):
@@ -95,13 +96,24 @@ class SQLTransport(Transport):
             for col in table.columns:
                 if not col.autoincrement:
                     continue
-                print(f'Updating autoincrement for {col.name} in {table.name}: {table.name}_{col.name}_seq')
+                # Fetch the sequence for this autoincremented column
+                seq = list(conn.execute(f"""
+                    SELECT column_default FROM information_schema.columns
+                    WHERE column_default LIKE 'nextval%%' and column_name = '{col.name}'"""))
+                if not seq:
+                    continue
+                seq_name = re.findall(r'^nextval\(\'(.*)\'::regclass\)', seq[0][0])
+                seq_name = seq_name[0] if seq_name else None
+                if not seq_name:
+                    continue
+
+                print(f'Updating autoincrement for {col.name} in {table.name}: {seq_name}')
                 value = conn.execute(f"""
                     SELECT max({col.name}) FROM {table.name}""").fetchone()[0]
                 if value is not None:
                     value = int(value) + 1
                     conn.execute(f"""
-                        ALTER SEQUENCE IF EXISTS {table.name}_{col.name}_seq
+                        ALTER SEQUENCE {seq_name}
                         MINVALUE {value} START {value} RESTART {value}""")
             conn.execute('commit')
 
